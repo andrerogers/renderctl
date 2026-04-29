@@ -11,8 +11,8 @@ The architectural model:
 
 Supported providers:
 
-1. **OpenAI GPT Image (latest, e.g. `gpt-image-2`)**
-2. **Google Gemini Nano Banana (`gemini-3.1-flash-image-preview`)**
+1. **OpenAI GPT Image 2 (`openai/gpt-5.4-image-2` via OpenRouter)**
+2. **Google Gemini Nano Banana 2 (`google/gemini-3.1-flash-image-preview` via OpenRouter)**
 
 ---
 
@@ -259,7 +259,7 @@ Optional future:
   "status": "success",
   "file_path": "...",
   "provider": "openai",
-  "model": "gpt-image-2",
+  "model": "openai/gpt-5.4-image-2",
   "generation_time_ms": 1234
 }
 ```
@@ -270,7 +270,7 @@ Optional future:
 {
   "prompt": "...",
   "provider": "openai",
-  "model": "gpt-image-2",
+  "model": "openai/gpt-5.4-image-2",
   "created_at": "...",
   "generation_time_ms": 1234
 }
@@ -296,15 +296,15 @@ Optional future:
 
 ## Exit Codes
 
-| Code | Meaning          |
-| ---- | ---------------- |
-| 0    | success          |
-| 1    | general error    |
-| 2    | invalid args     |
-| 3    | config error     |
-| 4    | provider error   |
-| 5    | safety refusal   |
-| 6    | filesystem error |
+| Code | Meaning                      |
+| ---- | ---------------------------- |
+| 0    | success                      |
+| 1    | general error                |
+| 2    | invalid args                 |
+| 3    | config error                 |
+| 4    | provider error               |
+| 5    | safety refusal (implemented) |
+| 6    | filesystem error             |
 
 ---
 
@@ -312,15 +312,12 @@ Optional future:
 
 ### Environment
 
-* `OPENAI_API_KEY`
-* `GEMINI_API_KEY`
-* `IMAGE_OUTPUT_DIR`
+* `OPENROUTER_API_KEY` — required; set in `.env` or shell environment
 
-### Config file
+### Future configuration (not yet implemented)
 
-```
-~/.config/renderctl/config.toml
-```
+* `IMAGE_OUTPUT_DIR` env var — default output directory
+* `~/.config/renderctl/config.toml` — persistent config file
 
 ---
 

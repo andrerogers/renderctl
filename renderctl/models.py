@@ -10,6 +10,7 @@ class GenerateResult:
     provider: str = ""
     model: str = ""
     generation_time_ms: int = 0
+    created_at: str = ""
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2)

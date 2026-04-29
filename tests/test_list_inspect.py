@@ -19,7 +19,7 @@ TINY_PNG_BYTES = bytes([
 SAMPLE_SIDECAR = {
     "prompt": "a futuristic city",
     "provider": "openai",
-    "model": "gpt-image-2",
+    "model": "openai/gpt-5.4-image-2",
     "created_at": "2026-04-28T12:00:00",
     "generation_time_ms": 1234,
 }
@@ -73,9 +73,26 @@ def test_list_image_without_sidecar(tmp_path):
     assert data[0] == {"file_path": str(tmp_path / "img1.png")}
 
 
+def test_list_corrupt_sidecar(tmp_path):
+    png = make_image(tmp_path, "img1", sidecar=None)
+    (tmp_path / "img1.json").write_text("not valid json{{{")
+
+    result = runner.invoke(app, ["list", "--output-dir", str(tmp_path), "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data[0]["metadata_error"] == "corrupt sidecar"
+
+
 def test_list_missing_dir(tmp_path):
     result = runner.invoke(app, ["list", "--output-dir", str(tmp_path / "nonexistent")])
     assert result.exit_code == 6
+
+
+def test_list_json_error_is_json(tmp_path):
+    result = runner.invoke(app, ["list", "--output-dir", str(tmp_path / "nonexistent"), "--json"])
+    assert result.exit_code == 6
+    data = json.loads(result.output)
+    assert data["status"] == "error"
 
 
 # --- inspect ---
@@ -99,4 +116,4 @@ def test_inspect_missing_sidecar(tmp_path):
 
 def test_inspect_missing_file(tmp_path):
     result = runner.invoke(app, ["inspect", str(tmp_path / "ghost.png")])
-    assert result.exit_code == 2
+    assert result.exit_code == 6

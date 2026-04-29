@@ -1,6 +1,6 @@
 # renderctl
 
-A standalone image generation CLI. Supports OpenAI (`gpt-image-2`) and Google Gemini (`gemini-3.1-flash-image-preview`).
+A standalone image generation CLI. Supports OpenAI GPT Image 2 and Google Gemini Nano Banana 2 via OpenRouter.
 
 An MCP server adapter (Phase 4) will allow AI agents to invoke the CLI via subprocess.
 
@@ -26,11 +26,11 @@ source .venv/bin/activate
 
 ## Configuration
 
-Copy `.env.example` and fill in your keys:
+Copy `.env.example` and fill in your key:
 
 ```bash
 cp .env.example .env
-# edit .env with your keys
+# edit .env — set OPENROUTER_API_KEY=sk-or-...
 ```
 
 The CLI loads `.env` automatically on startup — no need to source it.
@@ -94,7 +94,7 @@ Each `generate` or `edit` run writes two files to `--output-dir`:
   "status": "success",
   "file_path": "...",
   "provider": "openai",
-  "model": "gpt-image-2",
+  "model": "openai/gpt-5.4-image-2",
   "generation_time_ms": 1234
 }
 ```
@@ -116,7 +116,7 @@ Each `generate` or `edit` run writes two files to `--output-dir`:
 
 ## MCP Server
 
-Coming in Phase 4. The MCP server will be a thin adapter that shells out to `renderctl run <job.json>` and returns the JSON result to the calling agent. No business logic lives in the MCP layer.
+Coming in Phase 4. The MCP server will be a thin adapter that shells out to the CLI (e.g. `renderctl generate ... --json`) and returns the JSON result to the calling agent. No business logic lives in the MCP layer.
 
 ---
 
