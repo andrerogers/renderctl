@@ -13,6 +13,7 @@ Supported providers:
 
 1. **OpenAI GPT Image 2 (`openai/gpt-5.4-image-2` via OpenRouter)**
 2. **Google Gemini Nano Banana 2 (`google/gemini-3.1-flash-image-preview` via OpenRouter)**
+3. **Higgsfield Seedream (`bytedance/seedream/v4/text-to-image` via direct API)**
 
 ---
 
@@ -312,7 +313,8 @@ Optional future:
 
 ### Environment
 
-* `OPENROUTER_API_KEY` — required; set in `.env` or shell environment
+* `OPENROUTER_API_KEY` — required for openai, gemini; set in `.env` or shell environment
+* `HIGGSFIELD_API_KEY` — required for higgsfield; set in `.env` or shell environment
 
 ### Future configuration (not yet implemented)
 
@@ -366,11 +368,15 @@ renderctl/
 * version locking
 * integration tests
 
-### Phase 5
+### Phase 5 (partial — complete)
 
-* retries
-* batch jobs
-* explicit fallback
+* retries — 3 attempts, exponential backoff on 429/5xx in `BaseProvider._post`
+* batch jobs — `renderctl run <job.json>` accepts single job dict or array
+* Higgsfield provider — async poll, direct API, `HIGGSFIELD_API_KEY`
+
+### Phase 5 (deferred)
+
+* explicit fallback (`--fallback-provider`)
 * daemon mode (optional)
 
 ---

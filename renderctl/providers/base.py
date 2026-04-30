@@ -40,8 +40,12 @@ class BaseProvider(ABC):
             "modalities": ["image", "text"],
         }
         start = time.monotonic()
-        resp = httpx.post(OPENROUTER_URL, headers=self._headers, json=payload, timeout=120)
-        resp.raise_for_status()
+        for attempt in range(3):
+            resp = httpx.post(OPENROUTER_URL, headers=self._headers, json=payload, timeout=120)
+            if resp.status_code not in {429, 500, 502, 503, 504} or attempt == 2:
+                resp.raise_for_status()
+                break
+            time.sleep(2 ** attempt)
         elapsed_ms = int((time.monotonic() - start) * 1000)
         data = resp.json()
         images = data["choices"][0]["message"].get("images")

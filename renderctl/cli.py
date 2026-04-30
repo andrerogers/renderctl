@@ -12,12 +12,13 @@ load_dotenv()
 from renderctl import __version__
 from renderctl.providers.base import SafetyRefusalError
 from renderctl.providers.gemini_provider import GeminiProvider
+from renderctl.providers.higgsfield_provider import HiggsFieldProvider
 from renderctl.providers.openai_provider import OpenAIProvider
 
 app = typer.Typer(no_args_is_help=True)
 console = Console(stderr=True)
 
-PROVIDERS = {"openai": OpenAIProvider, "gemini": GeminiProvider}
+PROVIDERS = {"openai": OpenAIProvider, "gemini": GeminiProvider, "higgsfield": HiggsFieldProvider}
 
 
 def _version_callback(value: bool) -> None:
@@ -164,3 +165,74 @@ def inspect(
         _emit_error(f"no metadata found for {file}", 1)
 
     typer.echo(json.dumps(json.loads(sidecar.read_text(encoding="utf-8")), indent=2))
+
+
+@app.command()
+def run(
+    job_file: Annotated[Path, typer.Argument(help="Path to JSON job file (single job or array of jobs)")],
+    json_output: Annotated[bool, typer.Option("--json", help="Print results as JSON")] = False,
+) -> None:
+    """Execute one or more generation jobs from a JSON file."""
+    if not job_file.exists():
+        _emit_error(f"job file not found: {job_file}", 2, json_output)
+
+    try:
+        raw = json.loads(job_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        _emit_error(f"invalid JSON in job file: {e}", 2, json_output)
+
+    jobs = raw if isinstance(raw, list) else [raw]
+    results = []
+
+    for i, job in enumerate(jobs):
+        operation = job.get("operation")
+        if operation not in ("generate", "edit"):
+            _emit_error(f"job {i}: unsupported operation: {operation!r}", 2, json_output)
+
+        if "output_dir" not in job:
+            _emit_error(f"job {i}: output_dir is required", 2, json_output)
+        output_dir = Path(job["output_dir"])
+
+        prompt_text = job.get("prompt")
+        prompt_file_path = job.get("prompt_file")
+        if prompt_text and prompt_file_path:
+            _emit_error(f"job {i}: provide either prompt or prompt_file, not both", 2, json_output)
+        if prompt_file_path:
+            pf = Path(prompt_file_path)
+            if not pf.exists():
+                _emit_error(f"job {i}: prompt file not found: {pf}", 2, json_output)
+            prompt_text = pf.read_text(encoding="utf-8").rstrip()
+            if not prompt_text:
+                _emit_error(f"job {i}: prompt file is empty", 2, json_output)
+        if not prompt_text:
+            _emit_error(f"job {i}: prompt is required", 2, json_output)
+
+        p = _get_provider(job.get("provider", "openai"), json_output)
+
+        try:
+            label = f"Job {i + 1}/{len(jobs)}…"
+            with console.status(label) if not json_output else nullcontext():
+                if operation == "generate":
+                    result = p.generate(prompt_text, output_dir)
+                else:
+                    input_file_str = job.get("input_file")
+                    if not input_file_str:
+                        _emit_error(f"job {i}: input_file is required for edit", 2, json_output)
+                    input_file = Path(input_file_str)
+                    if not input_file.exists():
+                        _emit_error(f"job {i}: input_file not found: {input_file}", 2, json_output)
+                    result = p.edit(input_file, prompt_text, output_dir)
+        except NotImplementedError as e:
+            _emit_error(str(e), 2, json_output)
+        except SafetyRefusalError as e:
+            _emit_error(str(e), 5, json_output)
+        except Exception as e:
+            _emit_error(str(e), 4, json_output)
+
+        results.append(json.loads(result.to_json()))
+        if not json_output:
+            action = "Generated" if operation == "generate" else "Edited"
+            typer.echo(f"{action}: {result.file_path}")
+
+    if json_output:
+        typer.echo(json.dumps(results, indent=2))
